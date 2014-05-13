@@ -1,0 +1,10 @@
+Module.symvers
+modules.order
+.*
+*~
+*.bak
+*.cmd
+*.mod.c
+*.ko
+*.o
+!.gitignore
