@@ -2,7 +2,6 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
 	obj-m := taca.o
-#	module-objs := taca_main.o taca_data.o
 
 # Otherwise we were called directly from the command
 # line; invoke the kernel build system.
@@ -13,5 +12,8 @@ else
 
 default:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+
+clean:
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
 
 endif

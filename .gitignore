@@ -3,6 +3,7 @@ modules.order
 .*
 *~
 *.bak
+*.orig
 *.cmd
 *.mod.c
 *.ko

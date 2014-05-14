@@ -2,8 +2,13 @@
 #include <linux/module.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
+MODULE_AUTHOR("Francisco Neto");
 
-#define DATA_LENGTH 5986482
+#define VIDEO_LENGTH 5986482
+
+char video_data[] = {
+#include "video.h"
+};
 
 static int __init taca_init(void) {
 	printk(KERN_ALERT "Hello, world\n");
