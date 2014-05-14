@@ -1,8 +1,11 @@
 #ifndef TACA_H
 #define TACA_H
 
+#include <linux/types.h>
+
 struct taca_video {
-	int len;
+	char *lyrics;
+	ssize_t length;
 	char data[];
 };
 
