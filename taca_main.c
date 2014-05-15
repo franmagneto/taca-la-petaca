@@ -16,8 +16,7 @@ MODULE_DESCRIPTION("Módulo que toca o vídeo \"Chapolin - Taca La Petaca\"");
 
 struct taca {
 	char *data;
-	char *position;
-	ssize_t length;
+	ssize_t len;
 };
 
 extern struct taca_video video;
@@ -31,8 +30,7 @@ static int taca_open_device(struct inode *inode, struct file *file) {
 		return -ENOMEM;
 
 	taca->data = video.data;
-	taca->position = video.data;
-	taca->length = video.length;
+	taca->len = video.data_len;
 	file->private_data = taca;
 	return 0;
 }
@@ -46,13 +44,12 @@ static int taca_open_proc(struct inode *inode, struct file *file) {
 		return -ENOMEM;
 
 	taca->data = video.lyrics;
-	taca->position = video.lyrics;
-	taca->length = strlen(video.lyrics);
+	taca->len = video.lyrics_len;
 	file->private_data = taca;
 	return 0;
 }
 
-static int taca_release_generic(struct inode *inode, struct file *file) {
+static int taca_release(struct inode *inode, struct file *file) {
 
 	struct taca *taca = file->private_data;
 
@@ -60,23 +57,21 @@ static int taca_release_generic(struct inode *inode, struct file *file) {
 	return 0;
 }
 
-static ssize_t taca_read_generic(struct file *file, char *buffer, size_t length, loff_t *offset) {
+static ssize_t taca_read(struct file *file, char *buffer, size_t length, loff_t *offset) {
 
 	struct taca *taca = file->private_data;
-	int bytes = 0;
 
-	while (length && (taca->position - taca->data) < taca->length) {
+	if (*offset + length > taca->len)
+		length -= *offset + length - taca->len;
 
-		put_user(*(taca->position++), buffer++);
+	if (copy_to_user(buffer, taca->data + *offset, length))
+		return -EFAULT;
 
-		length--;
-		bytes++;
-	}
-
-	return bytes;
+	*offset += length;
+	return length;
 }
 
-static ssize_t taca_write_generic(struct file *file, const char *buffer, size_t length, loff_t *offset) {
+static ssize_t taca_write(struct file *file, const char *buffer, size_t length, loff_t *offset) {
 
 	pr_err("Escrita não suportada.\n");
 	return -EINVAL;
@@ -84,10 +79,10 @@ static ssize_t taca_write_generic(struct file *file, const char *buffer, size_t 
 
 static const struct file_operations device_fops = {
 	.owner = THIS_MODULE,
-	.read = taca_read_generic,
-	.write = taca_write_generic,
+	.read = taca_read,
+	.write = taca_write,
 	.open = taca_open_device,
-	.release = taca_release_generic
+	.release = taca_release
 };
 
 static struct miscdevice taca_dev = {
@@ -99,15 +94,16 @@ static struct miscdevice taca_dev = {
 
 static const struct file_operations proc_fops = {
 	.owner = THIS_MODULE,
-	.read = taca_read_generic,
-	.write = taca_write_generic,
+	.read = taca_read,
+	.write = taca_write,
 	.open = taca_open_proc,
-	.release = taca_release_generic
+	.release = taca_release
 };
 
-static int __init taca_init(void) {
+struct proc_dir_entry *proc_entry;
+int err;
 
-	int err;
+static int __init taca_init(void) {
 
 	err = misc_register(&taca_dev);
 	if (err) {
@@ -116,7 +112,12 @@ static int __init taca_init(void) {
 	}
 	pr_info("Dispositivo /dev/" KBUILD_MODNAME " criado\n");
 
-	proc_create(KBUILD_MODNAME, S_IRUGO, NULL, &proc_fops);
+	proc_entry = proc_create(KBUILD_MODNAME, S_IRUGO, NULL, &proc_fops);
+	if (proc_entry == NULL) {
+		pr_err("Entrada /proc/" KBUILD_MODNAME " não criada\n");
+		misc_deregister(&taca_dev);
+		return -ENOMEM;
+	}
 	pr_info("Entrada /proc/" KBUILD_MODNAME " criada\n");
 
 	return 0;
@@ -124,10 +125,14 @@ static int __init taca_init(void) {
 
 static void __exit taca_exit(void) {
 
-	remove_proc_entry(KBUILD_MODNAME, NULL);
-	pr_info("Entrada /proc/" KBUILD_MODNAME " removida\n");
-	misc_deregister(&taca_dev);
-	pr_info("Dispositivo /dev/" KBUILD_MODNAME " removido\n");
+	if (proc_entry) {
+		proc_remove(proc_entry);
+		pr_info("Entrada /proc/" KBUILD_MODNAME " removida\n");
+	}
+	if (!err) {
+		misc_deregister(&taca_dev);
+		pr_info("Dispositivo /dev/" KBUILD_MODNAME " removido\n");
+	}
 }
 
 module_init(taca_init);

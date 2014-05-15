@@ -4,8 +4,9 @@
 #include <linux/types.h>
 
 struct taca_video {
+	ssize_t lyrics_len;
 	char *lyrics;
-	ssize_t length;
+	ssize_t data_len;
 	char data[];
 };
 
