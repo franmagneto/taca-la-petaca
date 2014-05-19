@@ -1,3 +1,21 @@
+/*
+ * Taca la Petaca - Módulo de kernel
+ * =================================
+ *
+ * Autor: Francisco Machado Magalhães Neto
+ *
+ * Maio de 2014
+ *
+ * Módulo para o kernel do Linux que cria o dispositivo `/dev/taca`, que
+ * contém o vídeo *Chapolin - Taca La Petaca*, e a entrada `/proc/taca`,
+ * com a letra da música.
+ *
+ * O código foi baseado no álbum *Cycles Per Instruction*, da banda
+ * [netcat](http://www.netcat.co/), lançado como módulo de kernel.
+ *
+ * Também foi usado como referência o livro *Linux Device Drivers*.
+ */
+
 #define pr_fmt(msg) "[" KBUILD_MODNAME "]: " msg
 
 #include <linux/init.h>
@@ -13,8 +31,9 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Francisco Machado Magalhães Neto");
 MODULE_DESCRIPTION("Este módulo cria o dispositivo /dev/taca, \
-que contém o vídeo \"Chapolin - Taca La Petaca\", \
-e a entrada /proc/taca, que contém a letra da música");
+que contém o vídeo \"Chapolin - Taca La Petaca\" \
+(http://www.youtube.com/watch?v=Nq-6IaeDP48), e a entrada /proc/taca, \
+que contém a letra da música (http://letras.mus.br/chaves/1095878/)");
 
 /**
  * Estrutura comum para conter os dados a serem lidos
@@ -154,7 +173,6 @@ static int __init taca_init(void) {
 		pr_err("Dispositivo /dev/" KBUILD_MODNAME " não criado\n");
 		return err;
 	}
-	pr_info("Dispositivo /dev/" KBUILD_MODNAME " criado\n");
 
 	proc_entry = proc_create(KBUILD_MODNAME, S_IRUGO, NULL, &proc_fops);
 	if (proc_entry == NULL) {
@@ -162,7 +180,11 @@ static int __init taca_init(void) {
 		misc_deregister(&taca_dev);
 		return -ENOMEM;
 	}
-	pr_info("Entrada /proc/" KBUILD_MODNAME " criada\n");
+
+	pr_info("Taca la Petaca - Módulo de kernel");
+	pr_info("Autor: Francisco Machado Magalhães Neto");
+	pr_info("Para reproduzir, utilize o comando 'ffplay /dev/taca'");
+	pr_info("Letra da música disponível no arquivo '/proc/taca'");
 
 	return 0;
 }
@@ -175,13 +197,13 @@ static void __exit taca_exit(void) {
 
 	if (!err) {
 		misc_deregister(&taca_dev);
-		pr_info("Dispositivo /dev/" KBUILD_MODNAME " removido\n");
 	}
 
 	if (proc_entry) {
 		proc_remove(proc_entry);
-		pr_info("Entrada /proc/" KBUILD_MODNAME " removida\n");
 	}
+
+	pr_info("Módulo removido");
 }
 
 module_init(taca_init);
