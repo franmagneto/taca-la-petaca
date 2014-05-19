@@ -3,6 +3,9 @@
 
 #include <linux/types.h>
 
+/**
+ * Definição dos dados da letra e do vídeo
+ */
 struct taca_video {
 	ssize_t lyrics_len;
 	char *lyrics;

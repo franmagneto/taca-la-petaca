@@ -10,17 +10,31 @@
 
 #include "taca.h"
 
-MODULE_LICENSE("Dual BSD/GPL");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Francisco Machado Magalhães Neto");
-MODULE_DESCRIPTION("Módulo que toca o vídeo \"Chapolin - Taca La Petaca\"");
+MODULE_DESCRIPTION("Este módulo cria o dispositivo /dev/taca, \
+que contém o vídeo \"Chapolin - Taca La Petaca\", \
+e a entrada /proc/taca, que contém a letra da música");
 
+/**
+ * Estrutura comum para conter os dados a serem lidos
+ * (Será inicializada com os dados do vídeo para o dispositivo,
+ * e com a letra para a entrada /proc/taca
+ **/
 struct taca {
 	char *data;
 	ssize_t len;
 };
 
+/**
+ * Estrutura que contém os dados do vídeo e a letra
+ **/
 extern struct taca_video video;
 
+/**
+ * Abre o dispositivo /dev/taca, inicializando um "struc taca"
+ * com os dados do vídeo e armazenando em file->private_data
+ */
 static int taca_open_device(struct inode *inode, struct file *file) {
 
 	struct taca *taca;
@@ -35,6 +49,10 @@ static int taca_open_device(struct inode *inode, struct file *file) {
 	return 0;
 }
 
+/**
+ * Abre a entrada /proc/taca, inicializando um "struc taca"
+ * com os dados da letra e armazenando em file->private_data
+ */
 static int taca_open_proc(struct inode *inode, struct file *file) {
 
 	struct taca *taca;
@@ -49,6 +67,10 @@ static int taca_open_proc(struct inode *inode, struct file *file) {
 	return 0;
 }
 
+/**
+ * Função de fechamento de arquivo comum a /dev/taca e /proc/taca,
+ * que desaloca a estrutura em file->private_data
+ */
 static int taca_release(struct inode *inode, struct file *file) {
 
 	struct taca *taca = file->private_data;
@@ -57,6 +79,11 @@ static int taca_release(struct inode *inode, struct file *file) {
 	return 0;
 }
 
+/**
+ * Função de leitura comum a /dev/taca e /proc/taca.
+ * O conteúdo a ser lido depende do valor de file->private_data
+ * atribuído na função de abertura
+ */
 static ssize_t taca_read(struct file *file, char *buffer, size_t length, loff_t *offset) {
 
 	struct taca *taca = file->private_data;
@@ -71,12 +98,18 @@ static ssize_t taca_read(struct file *file, char *buffer, size_t length, loff_t 
 	return length;
 }
 
+/**
+ * Ambos /dev/taca e /proc/taca não suportam escrita
+ */
 static ssize_t taca_write(struct file *file, const char *buffer, size_t length, loff_t *offset) {
 
 	pr_err("Escrita não suportada.\n");
 	return -EINVAL;
 }
 
+/**
+ * Operações de arquivo para /dev/taca
+ */
 static const struct file_operations device_fops = {
 	.owner = THIS_MODULE,
 	.read = taca_read,
@@ -85,6 +118,10 @@ static const struct file_operations device_fops = {
 	.release = taca_release
 };
 
+/**
+ * Estrutura miscdevice de /dev/taca, com as operações de arquivo
+ * definidas em device_ops
+ */
 static struct miscdevice taca_dev = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = KBUILD_MODNAME,
@@ -92,6 +129,9 @@ static struct miscdevice taca_dev = {
 	.mode = S_IRUGO
 };
 
+/**
+ * Operações de arquivo para /proc/taca
+ */
 static const struct file_operations proc_fops = {
 	.owner = THIS_MODULE,
 	.read = taca_read,
@@ -103,6 +143,10 @@ static const struct file_operations proc_fops = {
 struct proc_dir_entry *proc_entry;
 int err;
 
+/**
+ * Função de inicialização do módulo, onde os arquivos especiais
+ * /dev/taca e /proc/taca são criados
+ */
 static int __init taca_init(void) {
 
 	err = misc_register(&taca_dev);
@@ -123,15 +167,20 @@ static int __init taca_init(void) {
 	return 0;
 }
 
+/**
+ * Função executada quando o módulo é descarregado.
+ * Remove os arquivos especiais /dev/taca e /proc/taca
+ */
 static void __exit taca_exit(void) {
+
+	if (!err) {
+		misc_deregister(&taca_dev);
+		pr_info("Dispositivo /dev/" KBUILD_MODNAME " removido\n");
+	}
 
 	if (proc_entry) {
 		proc_remove(proc_entry);
 		pr_info("Entrada /proc/" KBUILD_MODNAME " removida\n");
-	}
-	if (!err) {
-		misc_deregister(&taca_dev);
-		pr_info("Dispositivo /dev/" KBUILD_MODNAME " removido\n");
 	}
 }
 
