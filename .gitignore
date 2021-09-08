@@ -5,6 +5,7 @@ modules.order
 *.bak
 *.orig
 *.cmd
+*.mod
 *.mod.c
 *.ko
 *.o

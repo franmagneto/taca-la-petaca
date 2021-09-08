@@ -151,12 +151,11 @@ static struct miscdevice taca_dev = {
 /**
  * Operações de arquivo para /proc/taca
  */
-static const struct file_operations proc_fops = {
-	.owner = THIS_MODULE,
-	.read = taca_read,
-	.write = taca_write,
-	.open = taca_open_proc,
-	.release = taca_release
+static const struct proc_ops proc_ops = {
+	.proc_read = taca_read,
+	.proc_write = taca_write,
+	.proc_open = taca_open_proc,
+	.proc_release = taca_release
 };
 
 struct proc_dir_entry *proc_entry;
@@ -174,7 +173,7 @@ static int __init taca_init(void) {
 		return err;
 	}
 
-	proc_entry = proc_create(KBUILD_MODNAME, S_IRUGO, NULL, &proc_fops);
+	proc_entry = proc_create(KBUILD_MODNAME, S_IRUGO, NULL, &proc_ops);
 	if (proc_entry == NULL) {
 		pr_err("Entrada /proc/" KBUILD_MODNAME " não criada\n");
 		misc_deregister(&taca_dev);
